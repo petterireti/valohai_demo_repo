@@ -1,13 +1,22 @@
 - step:
+    name: fetch-data
+    image: python:3.9
+    command:
+    - pip install -r requirements.txt
+    - python ./fetch_dataset.py {parameters}
+    inputs:
+    - name: dataset
+      default: https://valohaidemo.blob.core.windows.net/mnist/mnist.npz
+      optional: false
+- step:
     name: preprocess-dataset
     image: python:3.9
     command:
     - pip install -r requirements.txt
     - python ./preprocess_dataset.py {parameters}
     inputs:
-    - name: dataset
-      default: https://valohaidemo.blob.core.windows.net/mnist/mnist.npz
-      optional: false
+    - name: fetched_dataset
+      optional: true
 - step:
     name: train-model
     image: tensorflow/tensorflow:2.6.0
@@ -29,12 +38,20 @@
     - name: preprocessed_dataset
       optional: true
 - pipeline:
-    name: preprocess-and-train
+    name: fetch-data-preprocess-and-train
     edges:
+    - configuration: { }
+      source: fetch-data.output.fetched_dataset.npz
+      target: preprocess.input.fetched_dataset
     - configuration: {}
       source: preprocess.output.preprocessed_mnist.npz
       target: train.input.preprocessed_dataset
     nodes:
+    - name: fetch_data
+      on-error: stop-all
+      override: { }
+      step: fetch-data
+      type: execution
     - name: preprocess
       on-error: stop-all
       override: {}
@@ -45,20 +62,4 @@
       override: {}
       step: train-model
       type: execution
-- pipeline:
-    name: utilspipeline
-    edges:
-    - configuration: {}
-      source: preprocess-dataset_1.output.preprocessed_mnist.npz
-      target: train-model_1.input.preprocessed_dataset
-    nodes:
-    - name: preprocess-dataset_1
-      on-error: stop-all
-      override: {}
-      step: preprocess-dataset
-      type: execution
-    - name: train-model_1
-      on-error: stop-all
-      override: {}
-      step: train-model
-      type: execution
+
