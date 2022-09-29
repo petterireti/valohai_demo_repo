@@ -47,7 +47,7 @@
       source: preprocess.output.preprocessed_mnist.npz
       target: train.input.preprocessed_dataset
     nodes:
-    - name: fetch_data
+    - name: fetch-data
       on-error: stop-all
       override: { }
       step: fetch-data
